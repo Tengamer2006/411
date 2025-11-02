@@ -81,6 +81,18 @@ $$;
 DROP FUNCTION IF EXISTS imp411.fn_capture_formulario411();
 """
 
+def create_trigger(apps, schema_editor):
+    if schema_editor.connection.vendor != 'postgresql':
+        return
+    schema_editor.execute(FORWARD_SQL)
+
+
+def drop_trigger(apps, schema_editor):
+    if schema_editor.connection.vendor != 'postgresql':
+        return
+    schema_editor.execute(REVERSE_SQL)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -88,5 +100,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(sql=FORWARD_SQL, reverse_sql=REVERSE_SQL),
+        migrations.RunPython(create_trigger, drop_trigger),
     ]

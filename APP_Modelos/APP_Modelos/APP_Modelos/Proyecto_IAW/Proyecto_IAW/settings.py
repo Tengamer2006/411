@@ -66,18 +66,31 @@ TEMPLATES = [
 WSGI_APPLICATION = 'Proyecto_IAW.wsgi.application'
 
 # ============================================================
-# BASE DE DATOS (PostgreSQL en Docker)
+# BASE DE DATOS
 # ============================================================
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'proyecto'),
-        'USER': os.getenv('POSTGRES_USER', 'proyecto'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'proyecto'),
-        'HOST': os.getenv('POSTGRES_HOST', 'db'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+# Por defecto usamos SQLite para que el proyecto funcione sin
+# dependencias externas durante el desarrollo o la ejecución de
+# los tests automatizados. Si se desea forzar PostgreSQL (por
+# ejemplo en Docker o producción) basta con definir la variable
+# de entorno USE_POSTGRES=1.
+if os.getenv('USE_POSTGRES', '').lower() in {'1', 'true', 'yes'}:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'proyecto'),
+            'USER': os.getenv('POSTGRES_USER', 'proyecto'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'proyecto'),
+            'HOST': os.getenv('POSTGRES_HOST', 'db'),
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # ============================================================
 # VALIDADORES Y AUTENTICACIÓN
