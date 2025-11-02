@@ -66,18 +66,28 @@ TEMPLATES = [
 WSGI_APPLICATION = 'Proyecto_IAW.wsgi.application'
 
 # ============================================================
-# BASE DE DATOS (PostgreSQL en Docker)
+# BASE DE DATOS (PostgreSQL en Docker o SQLite local)
 # ============================================================
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'proyecto'),
-        'USER': os.getenv('POSTGRES_USER', 'proyecto'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'proyecto'),
-        'HOST': os.getenv('POSTGRES_HOST', 'db'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+postgres_host = os.getenv('POSTGRES_HOST')
+
+if postgres_host:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'proyecto'),
+            'USER': os.getenv('POSTGRES_USER', 'proyecto'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'proyecto'),
+            'HOST': postgres_host,
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # ============================================================
 # VALIDADORES Y AUTENTICACIÓN
