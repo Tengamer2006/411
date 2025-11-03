@@ -1,0 +1,68 @@
+﻿services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: proyecto
+      POSTGRES_USER: proyecto
+      POSTGRES_PASSWORD: proyecto
+    ports:
+      - "5433:5432"  # usa 5433 en el host para evitar conflictos con un Postgres local
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql/20_outbox.sql:/docker-entrypoint-initdb.d/20_outbox.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build:
+      context: ..
+      dockerfile: DOCKER/Dockerfile
+    working_dir: /app
+    environment:
+      # DB (tu settings.py debe leer estas variables)
+      POSTGRES_DB: proyecto
+      POSTGRES_USER: proyecto
+      POSTGRES_PASSWORD: proyecto
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      # Django (recomendado)
+      SECRET_KEY: dev-key-cambia-esto
+      DEBUG: "1"
+      ALLOWED_HOSTS: "*"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    # Si tu Dockerfile NO arranca el server, descomenta:
+    # command: sh -lc "python manage.py migrate && python -u manage.py runserver 0.0.0.0:8000"
+
+  sender:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - .:/app   # aquí deben estar sender.py y requirements.txt dentro de DOCKER
+    environment:
+      IMP411_ENDPOINT: "http://172.20.10.12:8000/api/impuestos"
+      IMP411_INTERVAL_SEC: "30"
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: proyecto
+      POSTGRES_USER: proyecto
+      POSTGRES_PASSWORD: proyecto
+      # Opcional:
+      IMP411_BATCH: "100"
+    depends_on:
+      db:
+        condition: service_healthy
+      web:
+        condition: service_started
+    restart: unless-stopped
+    command: >
+      sh -lc "python -m pip install --no-cache-dir -r /app/requirements.txt &&
+            exec python -u /app/sender.py"
+volumes:
+  pgdata:
